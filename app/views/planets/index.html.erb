@@ -1,0 +1,14 @@
+<p style="color: green"><%= notice %></p>
+
+<h1>Planets</h1>
+
+<div id="planets">
+  <% @planets.each do |planet| %>
+    <%= render planet %>
+    <p>
+      <%= link_to "Show this planet", planet %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New planet", new_planet_path %>

@@ -1,0 +1,27 @@
+<%= form_with(model: favorite) do |form| %>
+  <% if favorite.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(favorite.errors.count, "error") %> prohibited this favorite from being saved:</h2>
+
+      <ul>
+        <% favorite.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :favoritable_type, style: "display: block" %>
+    <%= form.text_field :favoritable_type %>
+  </div>
+
+  <div>
+    <%= form.label :favoritable_id, style: "display: block" %>
+    <%= form.number_field :favoritable_id %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>

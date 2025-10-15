@@ -1,0 +1,14 @@
+<p style="color: green"><%= notice %></p>
+
+<h1>Starships</h1>
+
+<div id="starships">
+  <% @starships.each do |starship| %>
+    <%= render starship %>
+    <p>
+      <%= link_to "Show this starship", starship %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New starship", new_starship_path %>

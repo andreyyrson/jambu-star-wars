@@ -1,0 +1,172 @@
+<div class="container mt-5">
+    <!-- Adicionando Bootstrap 5 para garantir que as classes funcionem -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            border: 1px solid;
+            border-radius: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        .text-warning-custom { color: #ffe81f !important; } /* Cor amarela Star Wars */
+        .btn-warning-custom {
+            background-color: #ffe81f;
+            border-color: #ffe81f;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+        .btn-warning-custom:hover {
+            background-color: #ffd700;
+            border-color: #ffd700;
+        }
+        .border-success-swapi { border-color: #4CAF50 !important; } /* Verde para resultados externos (SWAPI Character) */
+        .border-danger-starship { border-color: #DC3545 !important; } /* Vermelho para Nave Estelar */
+    </style>
+
+    <h1 class="text-warning-custom mb-4 font-weight-bold">Busca Unificada Star Wars</h1>
+    <p class="text-light">Pesquise por Personagens (Locais e SWAPI), Planetas e muito mais.</p>
+
+    <!-- FORMULÁRIO DE BUSCA -->
+    <form id="searchForm" class="mb-5">
+        <div class="input-group input-group-lg shadow-sm">
+            <input 
+                type="text" 
+                id="searchInput" 
+                class="form-control bg-dark text-light border-warning-custom" 
+                placeholder="Digite um termo (ex: Luke, Tatooine, R2-D2)" 
+                required
+            >
+            <button class="btn btn-warning-custom font-weight-bold" type="submit">
+                <span id="searchSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                Buscar
+            </button>
+        </div>
+    </form>
+
+    <!-- ÁREA DE RESULTADOS -->
+    <div id="resultsContainer" class="row">
+        <div class="col-12 text-center text-info" id="initialMessage">
+            Digite algo acima para começar a sua busca na galáxia!
+        </div>
+    </div>
+</div>
+
+<script>
+    // URL base da sua API Rails.
+    const API_BASE_URL = window.location.origin;
+    
+    // Referências do DOM
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const searchSpinner = document.getElementById('searchSpinner');
+
+    // Função auxiliar para criar cartões de resultado
+    function createResultCard(item) {
+        const itemType = item.type;
+        const name = item.name || 'Item Sem Nome'; 
+        let details = '';
+        
+        // Usamos uma verificação mais robusta para Naves Estelares (Nave Estelar ou Starship)
+        const isStarship = itemType === 'Nave Estelar' || itemType === 'Starship';
+
+        // Detalhes genéricos
+        if (itemType === 'SWAPI Character') {
+            details = `<small>Fonte Externa (SWAPI)</small>`;
+        } else if (itemType === 'Personagem') {
+            details = `<small>Fonte Local (Personagem)</small>`;
+        } else if (itemType === 'Planeta') {
+            details = `<small>Fonte Local (Planeta)</small>`;
+        } else if (isStarship) { 
+            // Usa o tipo exato que veio do back-end para detalhes
+            details = `<small>Fonte Local (${itemType})</small>`;
+        }
+        
+        // Escolhe a cor do cartão com base no tipo
+        let borderColorClass = 'border-secondary';
+        if (itemType === 'Personagem') borderColorClass = 'border-warning-custom';
+        else if (itemType === 'Planeta') borderColorClass = 'border-info';
+        else if (itemType === 'SWAPI Character') borderColorClass = 'border-success-swapi'; 
+        else if (isStarship) borderColorClass = 'border-danger-starship'; // Estilo para Nave Estelar/Starship
+
+        return `
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card shadow-sm bg-dark text-light ${borderColorClass}">
+                    <div class="card-body">
+                        <h5 class="card-title text-light">${name}</h5>
+                        <p class="card-text">
+                            <span class="badge text-bg-secondary mb-2">${itemType}</span><br/>
+                            ${details}
+                        </p>
+                        <button 
+                            class="btn btn-sm btn-outline-light btn-warning-custom"
+                            onclick="alert('Funcionalidade de Favoritar ID ${item.id} do tipo ${itemType} será implementada a seguir.')"
+                        >
+                            ⭐ Favoritar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Função principal de busca
+    async function handleSearch(event) {
+        event.preventDefault();
+        const query = searchInput.value.trim();
+
+        resultsContainer.innerHTML = ''; 
+        
+        // Habilita loading
+        searchSpinner.classList.remove('d-none');
+        searchInput.disabled = true;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/search/index?query=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Accept': 'application/json' 
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Resposta de erro do servidor:', errorText); 
+                throw new Error(`Erro de rede (${response.status}).`);
+            }
+
+            const data = await response.json(); 
+
+            // O Rails retorna o array de resultados como o corpo JSON (data).
+            const results = data || []; 
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `<div class="col-12 alert alert-info text-center">Nenhum resultado encontrado para "${query}".</div>`;
+            } else {
+                let html = `<h3 class="text-light w-100 px-3 mb-4">Resultados Encontrados (${results.length})</h3>`;
+                results.forEach(item => {
+                    html += createResultCard(item);
+                });
+                resultsContainer.innerHTML = html;
+            }
+
+        } catch (error) {
+            console.error('Erro na busca:', error);
+            resultsContainer.innerHTML = `<div class="col-12 alert alert-danger">Erro ao carregar resultados: ${error.message}</div>`;
+        } finally {
+            // Desabilita loading
+            searchSpinner.classList.add('d-none');
+            searchInput.disabled = false;
+        }
+    }
+
+    // Adiciona o listener ao formulário
+    searchForm.addEventListener('submit', handleSearch);
+</script>

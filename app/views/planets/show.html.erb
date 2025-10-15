@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @planet %>
+
+<div>
+  <%= link_to "Edit this planet", edit_planet_path(@planet) %> |
+  <%= link_to "Back to planets", planets_path %>
+
+  <%= button_to "Destroy this planet", @planet, method: :delete %>
+</div>
