@@ -47,7 +47,6 @@ class FavoritesController < ApplicationController
   end
 
   private
-    # Parâmetros permitidos: o TIPO, o ID do item sendo favoritado e o ID da LISTA
     def favorite_params
       params.require(:favorite).permit(:favoritable_type, :favoritable_id, :favorites_list_id)
     end

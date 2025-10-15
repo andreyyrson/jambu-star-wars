@@ -15,9 +15,8 @@ class PlanetsController < ApplicationController
   end
 
   # POST /planets/:id/favorite
-  # Ação atualizada para exigir o favorites_list_id
   def favorite
-    planet = @planet # O @planet já está carregado pelo before_action
+    planet = @planet 
     list_id = params[:favorites_list_id]
     
     unless list_id.present?

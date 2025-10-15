@@ -32,7 +32,6 @@ class FavoritesListsController < ApplicationController
   end
 
   def favorites_list_params
-    # Aceita o parâmetro 'name' para dar nome à lista
     params.require(:favorites_list).permit(:name)
   end
 end
