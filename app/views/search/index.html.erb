@@ -1,7 +1,12 @@
-<div class="container mt-5">
-    <!-- Adicionando Bootstrap 5 para garantir que as classes funcionem -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <title>Busca Unificada Star Wars e Favoritos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* [ ... SEU CSS INICIAL ... ] */
         body {
             background-color: #1a1a1a;
             color: #f0f0f0;
@@ -11,12 +16,13 @@
             border: 1px solid;
             border-radius: 12px;
             transition: transform 0.2s, box-shadow 0.2s;
+            background-color: #2c2c2c;
         }
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
         }
-        .text-warning-custom { color: #ffe81f !important; } /* Cor amarela Star Wars */
+        .text-warning-custom { color: #ffe81f !important; } 
         .btn-warning-custom {
             background-color: #ffe81f;
             border-color: #ffe81f;
@@ -27,146 +33,542 @@
             background-color: #ffd700;
             border-color: #ffd700;
         }
-        .border-success-swapi { border-color: #4CAF50 !important; } /* Verde para resultados externos (SWAPI Character) */
-        .border-danger-starship { border-color: #DC3545 !important; } /* Vermelho para Nave Estelar */
+        .border-success-swapi { border-color: #4CAF50 !important; } 
+        .border-danger-starship { border-color: #DC3545 !important; } 
+        .border-local-person { border-color: #ffe81f !important; } 
+        .border-local-planet { border-color: #28a745 !important; }
+
+        #statusMessage {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 300px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: none;
+            color: #fff;
+        }
+        .bg-success-custom { background-color: #28a745; }
+        .bg-danger-custom { background-color: #dc3545; }
+        .btn-list-action {
+            background-color: #3d4a5b; 
+            color: #f0f0f0;
+            border-color: #3d4a5b;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-list-action:hover {
+            background-color: #5a6a7c;
+            color: #f0f0f0;
+        }
+        .btn-filter.active {
+            border: 2px solid #ffe81f;
+            background-color: #4a4a4a;
+        }
+
+        #favoritesManagement {
+            background-color: #1a1a1a;
+            border-top: 3px solid #ffe81f;
+            padding: 20px 0;
+            margin-top: 30px;
+        }
+        .list-group-item {
+            background-color: #383838;
+            color: #f0f0f0;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
     </style>
+</head>
+<body>
+    
+    <div class="container mt-5">
+        <div id="statusMessage" class="alert d-none" role="alert"></div>
 
-    <h1 class="text-warning-custom mb-4 font-weight-bold">Busca Unificada Star Wars</h1>
-    <p class="text-light">Pesquise por Personagens (Locais e SWAPI), Planetas e muito mais.</p>
+        <h1 class="text-warning-custom mb-4 font-weight-bold">Busca Unificada Star Wars</h1>
+        <p class="text-light">Pesquise por Personagens (Locais e SWAPI), Planetas e muito mais.</p>
 
-    <!-- FORMULÁRIO DE BUSCA -->
-    <form id="searchForm" class="mb-5">
-        <div class="input-group input-group-lg shadow-sm">
-            <input 
-                type="text" 
-                id="searchInput" 
-                class="form-control bg-dark text-light border-warning-custom" 
-                placeholder="Digite um termo (ex: Luke, Tatooine, R2-D2)" 
-                required
-            >
-            <button class="btn btn-warning-custom font-weight-bold" type="submit">
-                <span id="searchSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
-                Buscar
+        <div class="d-flex align-items-center mb-5 gap-2"> 
+            <form id="searchForm" class="flex-grow-1">
+                <div class="input-group input-group-lg shadow-sm">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="form-control bg-dark text-light border-warning-custom" 
+                        placeholder="Digite um termo (ex: Luke, Tatooine, R2-D2)" 
+                        required
+                    >
+                    <button class="btn btn-warning-custom font-weight-bold" type="submit">
+                        <span id="searchSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                        Buscar
+                    </button>
+                </div>
+            </form>
+            
+            <button id="newListBtn" class="btn btn-lg btn-list-action d-none d-md-block" type="button" onclick="createList()">
+                + Nova Lista
+            </button>
+            <button id="toggleFavoritesBtn" class="btn btn-lg btn-list-action" type="button">
+                ⭐ Ver Listas
             </button>
         </div>
-    </form>
 
-    <!-- ÁREA DE RESULTADOS -->
-    <div id="resultsContainer" class="row">
-        <div class="col-12 text-center text-info" id="initialMessage">
-            Digite algo acima para começar a sua busca na galáxia!
+        <div id="resultsContainer" class="row">
+            <div class="col-12 text-center text-info" id="initialMessage">
+                Digite algo acima para começar a sua busca na galáxia!
+            </div>
+        </div>
+        
+        <div id="favoritesManagement" class="d-none">
+            <h2 class="text-warning-custom mb-4">Gerenciamento de Listas</h2>
+            <p class="text-light">IDs das Listas são necessários para favoritar um item.</p>
+
+            <div class="d-flex gap-2 mb-4 p-3 bg-dark rounded shadow-sm">
+                <strong class="text-light me-2 align-self-center">Filtrar por Tipo:</strong>
+                <button class="btn btn-sm btn-outline-light btn-filter active" onclick="setFilter(null)">Todos</button>
+                <button class="btn btn-sm btn-outline-info btn-filter" data-type-filter="Person" onclick="setFilter('Person')">Personagens</button>
+                <button class="btn btn-sm btn-outline-danger btn-filter" data-type-filter="Starship" onclick="setFilter('Starship')">Naves</button>
+                <button class="btn btn-sm btn-outline-success btn-filter" data-type-filter="Planet" onclick="setFilter('Planet')">Planetas</button>
+            </div>
+            <div id="listsContainer" class="row">
+                </div>
         </div>
     </div>
-</div>
 
-<script>
-    // URL base da sua API Rails.
-    const API_BASE_URL = window.location.origin;
-    
-    // Referências do DOM
-    const searchForm = document.getElementById('searchForm');
-    const searchInput = document.getElementById('searchInput');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const searchSpinner = document.getElementById('searchSpinner');
-
-    // Função auxiliar para criar cartões de resultado
-    function createResultCard(item) {
-        const itemType = item.type;
-        const name = item.name || 'Item Sem Nome'; 
-        let details = '';
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const searchSpinner = document.getElementById('searchSpinner');
+        const statusMessage = document.getElementById('statusMessage');
+        const favoritesManagement = document.getElementById('favoritesManagement');
+        const listsContainer = document.getElementById('listsContainer');
+        const toggleFavoritesBtn = document.getElementById('toggleFavoritesBtn');
+        const newListBtn = document.getElementById('newListBtn');
         
-        // Usamos uma verificação mais robusta para Naves Estelares (Nave Estelar ou Starship)
-        const isStarship = itemType === 'Nave Estelar' || itemType === 'Starship';
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.content : '';
 
-        // Detalhes genéricos
-        if (itemType === 'SWAPI Character') {
-            details = `<small>Fonte Externa (SWAPI)</small>`;
-        } else if (itemType === 'Personagem') {
-            details = `<small>Fonte Local (Personagem)</small>`;
-        } else if (itemType === 'Planeta') {
-            details = `<small>Fonte Local (Planeta)</small>`;
-        } else if (isStarship) { 
-            // Usa o tipo exato que veio do back-end para detalhes
-            details = `<small>Fonte Local (${itemType})</small>`;
+        let currentFilterType = null;
+        let cachedLists = [];
+
+        function showStatus(message, type = 'error') {
+            statusMessage.textContent = message;
+            statusMessage.classList.remove('d-none', 'bg-success-custom', 'bg-danger-custom');
+            statusMessage.classList.add(type === 'success' ? 'bg-success-custom' : 'bg-danger-custom');
+            statusMessage.style.display = 'block';
+            setTimeout(() => { statusMessage.style.display = 'none'; statusMessage.classList.add('d-none'); }, 5000);
         }
-        
-        // Escolhe a cor do cartão com base no tipo
-        let borderColorClass = 'border-secondary';
-        if (itemType === 'Personagem') borderColorClass = 'border-warning-custom';
-        else if (itemType === 'Planeta') borderColorClass = 'border-info';
-        else if (itemType === 'SWAPI Character') borderColorClass = 'border-success-swapi'; 
-        else if (isStarship) borderColorClass = 'border-danger-starship'; // Estilo para Nave Estelar/Starship
 
-        return `
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card shadow-sm bg-dark text-light ${borderColorClass}">
-                    <div class="card-body">
-                        <h5 class="card-title text-light">${name}</h5>
-                        <p class="card-text">
-                            <span class="badge text-bg-secondary mb-2">${itemType}</span><br/>
-                            ${details}
-                        </p>
-                        <button 
-                            class="btn btn-sm btn-outline-light btn-warning-custom"
-                            onclick="alert('Funcionalidade de Favoritar ID ${item.id} do tipo ${itemType} será implementada a seguir.')"
-                        >
-                            ⭐ Favoritar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+        async function favoriteItem(item) {
+            if (item.model === 'SWAPI Character') {
+                showStatus(`O item "${item.name}" é um resultado externo. Salve-o localmente antes de favoritar!`, 'error');
+                return;
+            }
+            
+            let listId;
+            let listIdString;
 
-    // Função principal de busca
-    async function handleSearch(event) {
-        event.preventDefault();
-        const query = searchInput.value.trim();
-
-        resultsContainer.innerHTML = ''; 
-        
-        // Habilita loading
-        searchSpinner.classList.remove('d-none');
-        searchInput.disabled = true;
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/search/index?query=${encodeURIComponent(query)}`, {
-                headers: {
-                    'Accept': 'application/json' 
+            do {
+                listIdString = prompt(`\nPor favor, digite o ID da Lista de Favoritos para onde deseja adicionar "${item.name}":\n(Verifique os IDs na seção 'Gerenciamento de Listas')`);
+                
+                if (listIdString === null) {
+                    showStatus("Ação de favoritar cancelada.");
+                    return;
                 }
+                
+                const parsedId = parseInt(listIdString.trim());
+                
+                if (isNaN(parsedId) || parsedId <= 0) {
+                    alert("ID da Lista inválido. Por favor, digite um número inteiro positivo.");
+                    listId = null; 
+                } else {
+                    listId = parsedId;
+                }
+            } while (listId === null); 
+            
+            
+            const payload = {
+                favorite_list_id: listId,
+                favoritable_id: item.id,
+                favoritable_type: item.model 
+            };
+
+            const apiUrl = '/favorites';
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = data.errors ? data.errors.join(', ') : data.error || data.message || 'Falha ao favoritar item.';
+                    throw new Error(errorMsg);
+                }
+                
+                showStatus(`"${item.name}" adicionado à Lista ID ${listId} com sucesso!`, 'success');
+                renderLists(true); 
+            } catch (error) {
+                showStatus(`Falha ao favoritar "${item.name}": ${error.message}`);
+                console.error("Erro ao favoritar item:", error);
+            }
+        }
+
+        async function saveToLocalDB(item) {
+            const apiUrl = '/search/save_external'; 
+            
+            const payload = {
+                name: item.name,
+                type: item.model 
+            };
+
+            if (!confirm(`Deseja salvar o item "${item.name}" (como ${item.model}) no seu banco de dados local? Isso permitirá que ele seja favoritado.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = data.errors ? data.errors.join(', ') : data.error || 'Falha ao salvar item.';
+                    throw new Error(errorMsg);
+                }
+                
+                showStatus(`"${data.name}" salvo como ID ${data.id} no banco de dados local! Agora pode ser favoritado.`, 'success');
+                
+                handleSearch(new Event('submit')); 
+                
+            } catch (error) {
+                showStatus(`Falha ao salvar "${item.name}" localmente: ${error.message}`);
+                console.error("Erro ao salvar item localmente:", error);
+            }
+        }
+
+        async function fetchLists() {
+            try {
+                const response = await fetch('/favorite_lists', { 
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Falha ao carregar as listas.');
+                
+                const lists = await response.json();
+                cachedLists = lists; // Armazena a lista completa no cache
+                return lists; 
+            } catch (error) {
+                showStatus(`Erro ao buscar listas: ${error.message}`);
+                console.error("Erro fetchLists:", error);
+                return [];
+            }
+        }
+
+        function createListCard(list) {
+            
+            // FILTRAGEM DENTRO DA LISTA:
+            const filteredFavorites = list.favorites.filter(fav => {
+                if (!currentFilterType) return true; // Se não houver filtro, exibe todos
+                return fav.favoritable_type === currentFilterType;
             });
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Resposta de erro do servidor:', errorText); 
-                throw new Error(`Erro de rede (${response.status}).`);
+            if (currentFilterType && filteredFavorites.length === 0) {
+                 // Se estiver filtrando, e a lista não tiver itens desse tipo, não a exibe
+                return ''; 
             }
+            
+            // Geração de HTML dos ITENS FILTRADOS
+            let favoritesHtml = '';
+            
+            if (filteredFavorites && Array.isArray(filteredFavorites)) {
+                const firstFavorites = filteredFavorites.slice(0, 3);
+                
+                const validFavorites = firstFavorites.filter(fav => fav.favoritable && fav.favoritable.name);
 
-            const data = await response.json(); 
-
-            // O Rails retorna o array de resultados como o corpo JSON (data).
-            const results = data || []; 
-
-            if (results.length === 0) {
-                resultsContainer.innerHTML = `<div class="col-12 alert alert-info text-center">Nenhum resultado encontrado para "${query}".</div>`;
-            } else {
-                let html = `<h3 class="text-light w-100 px-3 mb-4">Resultados Encontrados (${results.length})</h3>`;
-                results.forEach(item => {
-                    html += createResultCard(item);
-                });
-                resultsContainer.innerHTML = html;
+                favoritesHtml = validFavorites.map(fav => `<span class="badge bg-secondary me-1">${fav.favoritable.name}</span>`).join('');
+                if (filteredFavorites.length > 3) { favoritesHtml += `<span class="badge bg-dark">+${filteredFavorites.length - 3}</span>`; }
             }
-
-        } catch (error) {
-            console.error('Erro na busca:', error);
-            resultsContainer.innerHTML = `<div class="col-12 alert alert-danger">Erro ao carregar resultados: ${error.message}</div>`;
-        } finally {
-            // Desabilita loading
-            searchSpinner.classList.add('d-none');
-            searchInput.disabled = false;
+            
+            const totalItems = list.favorites ? list.favorites.length : 0;
+            const displayedItems = filteredFavorites ? filteredFavorites.length : 0;
+            
+            const typeLabel = currentFilterType ? `<span class="badge bg-warning text-dark me-1">${currentFilterType}</span>` : '';
+            
+            // Escapa o nome para uso no onclick
+            const escapedName = list.name.replace(/'/g, "\\'");
+            
+            return `
+                <div class="col-lg-12 mb-3">
+                    <div class="list-group-item d-flex justify-content-between align-items-start shadow-sm flex-column">
+                        <div class="d-flex justify-content-between w-100 align-items-center mb-2">
+                            <div>
+                                <span class="badge text-bg-warning me-2 text-dark font-weight-bold">ID: ${list.id}</span>
+                                <strong>${list.name}</strong> 
+                                <span class="badge text-bg-primary">${totalItems} itens (${displayedItems} exibidos)</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button 
+                                    class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteList(${list.id}, '${escapedName}')"
+                                    title="Excluir Lista"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Itens${typeLabel}: </small>
+                            ${favoritesHtml || '<small class="text-muted">Lista vazia para este filtro</small>'}
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-    }
 
-    // Adiciona o listener ao formulário
-    searchForm.addEventListener('submit', handleSearch);
-</script>
+        // Função principal de renderização, agora aceita um parâmetro para forçar o fetch
+        async function renderLists(forceFetch = false) {
+            listsContainer.innerHTML = '<div class="col-12 text-center text-info">Carregando listas...</div>';
+            
+            let lists;
+            if (forceFetch || cachedLists.length === 0) {
+                lists = await fetchLists();
+            } else {
+                lists = cachedLists;
+            }
+            
+            if (lists.length === 0) { 
+                listsContainer.innerHTML = `<div class="col-12 alert alert-info text-center">Nenhuma lista encontrada. Crie a sua primeira lista!</div>`; 
+                return; 
+            }
+
+            let html = lists.map(createListCard).join('');
+            
+            if (html.trim() === '') {
+                 listsContainer.innerHTML = `<div class="col-12 alert alert-info text-center">Nenhuma lista contém itens do tipo <strong>${currentFilterType}</strong>.</div>`; 
+            } else {
+                listsContainer.innerHTML = `<div class="row w-100">${html}</div>`;
+            }
+        }
+
+        // NOVO CÓDIGO: Função para aplicar o filtro
+        function setFilter(type) {
+            currentFilterType = type;
+            
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            
+            const targetButton = type 
+                ? document.querySelector(`[data-type-filter="${type}"]`) 
+                : document.querySelector('.btn-filter:first-child');
+                
+            if (targetButton) {
+                targetButton.classList.add('active');
+            }
+            
+            renderLists(false); // Renderiza o cache existente com o novo filtro
+        }
+
+        async function createList() {
+            const listName = prompt("Digite o nome para a nova Lista de Favoritos:");
+            
+            if (listName === null) { 
+                showStatus("Criação de lista cancelada pelo usuário."); 
+                return;
+            }
+
+            if (listName.trim() === "") { 
+                showStatus("Nome da lista não pode ser vazio."); 
+                return; 
+            }
+            
+            try {
+                const response = await fetch('/favorite_lists', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                    body: JSON.stringify({ favorite_list: { name: listName.trim() } }) 
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    const errorMsg = data.errors ? data.errors.join(', ') : data.error || 'Erro desconhecido.';
+                    throw new Error(`Falha: ${errorMsg}`);
+                }
+                
+                showStatus(`Lista "${data.name}" (ID: ${data.id}) criada com sucesso!`, 'success');
+                renderLists(true); 
+                
+            } catch (error) { showStatus(`Falha ao criar lista: ${error.message}`); console.error("Erro createList:", error); }
+        }
+
+        async function deleteList(listId, listName) {
+            if (!confirm(`Tem certeza que deseja DELETAR a lista "${listName}" (ID: ${listId})? Esta ação é irreversível!`)) { return; }
+
+            try {
+                const response = await fetch(`/favorite_lists/${listId}`, { 
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
+
+                if (response.status === 204) { 
+                    showStatus(`Lista "${listName}" deletada com sucesso!`, 'success');
+                    renderLists(true); // Força um novo fetch após a exclusão
+                } else if (response.status === 404) {
+                    throw new Error('Lista não encontrada.');
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Erro desconhecido ao deletar.');
+                }
+                
+            } catch (error) { showStatus(`Falha ao deletar lista: ${error.message}`); console.error("Erro deleteList:", error); }
+        }
+
+        function createResultCard(item) {
+            const itemType = item.type;
+            const name = item.name || 'Item Sem Nome'; 
+            let details = '';
+            
+            const isStarship = itemType === 'Nave Estelar' || itemType === 'Starship';
+
+            if (itemType === 'SWAPI Character') { details = `<small>Fonte Externa (SWAPI)</small>`; } 
+            else if (itemType === 'Personagem') { details = `<small>Fonte Local (Personagem)</small>`; } 
+            else if (itemType === 'Planeta') { details = `<small>Fonte Local (Planeta)</small>`; } 
+            else if (isStarship) { details = `<small>Fonte Local (${itemType})</small>`; }
+            
+            let borderColorClass = 'border-secondary';
+            if (itemType === 'Personagem') borderColorClass = 'border-warning-custom border-local-person';
+            else if (itemType === 'Planeta') borderColorClass = 'border-info border-local-planet';
+            else if (itemType === 'SWAPI Character') borderColorClass = 'border-success-swapi'; 
+            else if (isStarship) borderColorClass = 'border-danger-starship'; 
+
+            const escapedName = name.replace(/'/g, "\\'");
+            const isSwapiItem = item.model === 'SWAPI Character';
+            
+            let actionButton = '';
+
+            if (isSwapiItem) {
+                actionButton = `
+                    <button 
+                        class="btn btn-sm btn-outline-info"
+                        onclick="saveToLocalDB({ name: '${escapedName}', model: 'Person' })" 
+                    >
+                        💾 Salvar Localmente
+                    </button>`;
+            } else {
+                actionButton = `
+                    <button 
+                        class="btn btn-sm btn-outline-light btn-warning-custom"
+                        onclick="favoriteItem({ id: ${item.id}, name: '${escapedName}', model: '${item.model}' })"
+                    >
+                        ⭐ Favoritar
+                    </button>`;
+            }
+
+            return `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card shadow-sm bg-dark text-light ${borderColorClass}">
+                        <div class="card-body">
+                            <h5 class="card-title text-light">${name}</h5>
+                            <p class="card-text">
+                                <span class="badge text-bg-secondary mb-2">${itemType}</span><br/>
+                                ${details}
+                                <br><small>ID: ${item.id} | Tipo: ${item.model}</small>
+                            </p>
+                            ${actionButton}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function handleSearch(event) {
+            event.preventDefault();
+            const query = searchInput.value.trim();
+            
+            if (query === '') {
+                resultsContainer.innerHTML = `<div class="col-12 text-center text-info">Digite algo acima para começar a sua busca na galáxia!</div>`;
+                return;
+            }
+
+            resultsContainer.innerHTML = ''; 
+            
+            searchSpinner.classList.remove('d-none');
+            searchInput.disabled = true;
+
+            try {
+                const url = `/search/index?query=${encodeURIComponent(query)}`;
+
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Resposta de erro do servidor:', errorText); 
+                    throw new Error(`Erro de rede (${response.status}).`);
+                }
+
+                const data = await response.json(); 
+                const results = data.results || data || []; 
+
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = `<div class="col-12 alert alert-info text-center">Nenhum resultado encontrado para "${query}".</div>`;
+                } else {
+                    let html = `<h3 class="text-light w-100 px-3 mb-4">Resultados Encontrados (${results.length})</h3>`;
+                    results.forEach(item => { html += createResultCard(item); });
+                    resultsContainer.innerHTML = html;
+                }
+
+            } catch (error) {
+                console.error('Erro na busca:', error);
+                showStatus(`Erro ao carregar resultados: ${error.message}`);
+                resultsContainer.innerHTML = `<div class="col-12 alert alert-danger">Erro ao carregar resultados: ${error.message}</div>`;
+            } finally {
+                searchSpinner.classList.add('d-none');
+                searchInput.disabled = false;
+            }
+        }
+        
+        function handleListDisplayToggle() {
+            const isHidden = favoritesManagement.classList.contains('d-none');
+            if (isHidden) {
+                renderLists(true); // Força o fetch ao abrir
+                favoritesManagement.classList.remove('d-none');
+                toggleFavoritesBtn.textContent = "✖️ Fechar Listas";
+                toggleFavoritesBtn.classList.remove('btn-list-action');
+                toggleFavoritesBtn.classList.add('btn-outline-danger');
+            } else {
+                favoritesManagement.classList.add('d-none');
+                toggleFavoritesBtn.textContent = "⭐ Ver Listas";
+                toggleFavoritesBtn.classList.add('btn-list-action');
+                toggleFavoritesBtn.classList.remove('btn-outline-danger');
+            }
+        }
+
+        searchForm.addEventListener('submit', handleSearch);
+        toggleFavoritesBtn.addEventListener('click', handleListDisplayToggle);
+        
+        window.favoriteItem = favoriteItem;
+        window.deleteList = deleteList;
+        window.saveToLocalDB = saveToLocalDB;
+        window.createList = createList;
+        window.setFilter = setFilter; // Expõe a função de filtro
+    </script>
+</body>
+</html>

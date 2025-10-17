@@ -1,14 +1,131 @@
-<p style="color: green"><%= notice %></p>
+<script>
+        const API_BASE_URL = window.location.origin;
+        // ... (resto das variáveis e showStatus inalteradas) ...
 
-<h1>Favorites</h1>
+        // --- FUNÇÕES DE GESTÃO DE LISTAS ---
 
-<div id="favorites">
-  <% @favorites.each do |favorite| %>
-    <%= render favorite %>
-    <p>
-      <%= link_to "Show this favorite", favorite %>
-    </p>
-  <% end %>
-</div>
+        async function createList() {
+            const listName = prompt("Insira um nome para a nova Lista de Favoritos:");
+            if (!listName || listName.trim() === "") {
+                showStatus("Criação de lista cancelada ou nome vazio.", 'danger');
+                return;
+            }
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? 
+                              document.querySelector('meta[name="csrf-token"]').content : 
+                              null;
+            
+            if (!csrfToken) {
+                 console.warn("CSRF token não encontrado. A requisição pode falhar se o Rails estiver configurado para proteção CSRF.");
+            }
 
-<%= link_to "New favorite", new_favorite_path %>
+            try {
+                const response = await fetch(`${API_BASE_URL}/favorite_lists`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    // O Rails aceita { name: "nome" } ou { favorite_list: { name: "nome" } } com a sua configuração atual.
+                    body: JSON.stringify({ name: listName }) 
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // CORREÇÃO: Acessa 'data.name' diretamente.
+                    showStatus(`Lista "${data.name}" criada com sucesso!`, 'success'); 
+                    fetchAndRenderLists(); 
+                } else {
+                    // Acessa o primeiro erro do array de mensagens.
+                    const errorMsg = data.errors?.name?.[0] || data.error || 'Erro desconhecido ao criar lista.';
+                    showStatus(`Erro ao criar lista: ${errorMsg}`, 'danger');
+                }
+            } catch (error) {
+                showStatus(`Erro de rede ao tentar criar lista: ${error.message}`, 'danger');
+            }
+        }
+        
+        function viewListContent(listId) {
+            // Esta rota será tratada pela ação SHOW do Rails, onde você deve ter 
+            // a view para exibir os favoritos daquela lista.
+            window.location.href = `/favorite_lists/${listId}`; 
+        }
+        
+        function renderLists(lists) {
+            // ... (função inalterada, pois recebe o array esperado) ...
+            listsContainer.innerHTML = ''; 
+            listCountElement.textContent = lists.length;
+            
+            if (lists.length === 0) {
+                listsContainer.innerHTML = `
+                    <div class="col-12 alert alert-info text-center">
+                        Você ainda não tem listas de favoritos. Clique em "+ Adicionar Nova Lista" para criar uma!
+                    </div>
+                `;
+                return;
+            }
+
+            lists.forEach(list => {
+                const favoriteCount = list.favorite_count != null ? list.favorite_count : 0;
+
+                const html = `
+                    <div class="col-lg-6">
+                        <div 
+                            class="card p-3 card-list" 
+                            onclick="viewListContent(${list.id})"
+                        >
+                            <div class="card-body">
+                                <h5 class="card-title text-warning-custom">${list.name}</h5>
+                                <p class="card-text mb-0">
+                                    <small class="text-secondary">
+                                        ID: ${list.id} | Itens: ${favoriteCount}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listsContainer.innerHTML += html;
+            });
+        }
+        
+        async function fetchAndRenderLists() {
+            try {
+                listsContainer.innerHTML = `<div class="col-12 text-center text-info">Buscando suas listas...</div>`;
+                
+                const response = await fetch(`${API_BASE_URL}/favorite_lists`, {
+                    // CORREÇÃO APLICADA: Adiciona o cabeçalho Accept
+                    headers: {
+                        'Accept': 'application/json' 
+                    }
+                });
+                
+                const data = await response.json(); // Data AGORA é o array [list1, list2, ...]
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao buscar listas. Verifique o FavoritesListsController.');
+                }
+                
+                // CORREÇÃO: Passa o array 'data' completo, pois o controlador Rails o retorna.
+                renderLists(data || []);
+
+            } catch (error) {
+                listsContainer.innerHTML = `
+                    <div class="col-12 alert alert-danger">
+                        Erro ao carregar listas: ${error.message}. Verifique a conexão com o backend.
+                    </div>
+                `;
+                listCountElement.textContent = '0';
+                console.error('Erro ao buscar listas:', error);
+            }
+        }
+
+        window.onload = fetchAndRenderLists;
+    </script>
+    
+    <% unless defined?(skip_csrf_meta_tag) && skip_csrf_meta_tag %>
+      <meta name="csrf-token" content="<%= form_authenticity_token %>">
+    <% end %>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<div class="container mt-5">
+  <%= link_to '← Voltar para Minhas Listas', favorite_lists_path, class: 'btn btn-outline-secondary mb-4' %>
+  
+  <h1 class="mb-4">Lista: <%= @favorite_list.name %></h1>
+  
+  <% if flash[:notice] %>
+    <div class="alert alert-success"><%= flash[:notice] %></div>
+  <% elsif flash[:alert] %>
+    <div class="alert alert-danger"><%= flash[:alert] %></div>
+  <% end %>
+
+  <% if @favorites.empty? %>
+    <p class="alert alert-warning">Esta lista está vazia. Para adicionar itens, você precisa implementar a tela de busca (Funcionalidade 1) e vincular a esta lista.</p>
+    
+    <h4 class="mt-5">Exemplo: Adicionar X-Wing (ID: 10)</h4>
+    <%= form_with url: favorites_path, method: :post, class: "card p-3 bg-light" do |form| %>
+      <%= form.hidden_field :favorite_list_id, value: @favorite_list.id %>
+      <%= form.hidden_field :favoritable_id, value: 10 %>
+      <%= form.hidden_field :favoritable_type, value: 'Starship' %>
+      <p class="mb-2">Clique para simular a adição de um item **Starship com ID 10** a esta lista.</p>
+      <%= form.submit "Adicionar Item de Exemplo", class: "btn btn-success btn-sm" %>
+    <% end %>
+
+  <% else %>
+    <div class="row">
+      <% @favorites.each do |favorite| %>
+        <div class="col-md-6 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title text-primary"><%= favorite.favoritable.name %></h5>
+              <p class="card-text">
+                **Tipo:** `<%= favorite.favoritable_type %>`
+                <br>
+                **ID:** `<%= favorite.favoritable_id %>`
+              </p>
+              
+              <%= button_to "Remover Favorito", favorite_path(favorite), method: :delete, data: { confirm: 'Tem certeza que deseja remover este item da lista?' }, class: "btn btn-sm btn-danger" %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

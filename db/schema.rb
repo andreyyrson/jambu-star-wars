@@ -10,20 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_10_15_143531) do
-  create_table "favorites", force: :cascade do |t|
-    t.string "favoritable_type"
-    t.integer "favoritable_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "favorites_list_id"
-    t.index ["favorites_list_id"], name: "index_favorites_on_favorites_list_id"
-  end
-
-  create_table "favorites_lists", force: :cascade do |t|
+ActiveRecord::Schema[7.1].define(version: 2025_10_16_211502) do
+  create_table "favorite_lists", force: :cascade do |t|
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "favorites", force: :cascade do |t|
+    t.string "favoritable_type", null: false
+    t.integer "favoritable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "favorite_list_id"
+    t.index ["favoritable_type", "favoritable_id"], name: "index_favorites_on_favoritable"
+    t.index ["favorite_list_id"], name: "index_favorites_on_favorite_list_id"
   end
 
   create_table "people", force: :cascade do |t|
@@ -47,5 +48,5 @@ ActiveRecord::Schema[7.1].define(version: 2025_10_15_143531) do
     t.datetime "updated_at", null: false
   end
 
-  add_foreign_key "favorites", "favorites_lists"
+  add_foreign_key "favorites", "favorite_lists"
 end

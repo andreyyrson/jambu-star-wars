@@ -1,0 +1,36 @@
+<div class="container mt-5">
+  <h1 class="mb-4 text-center">Organizador de Favoritos SWAPI</h1>
+
+  <% if flash[:notice] %>
+    <div class="alert alert-success"><%= flash[:notice] %></div>
+  <% elsif flash[:alert] %>
+    <div class="alert alert-danger"><%= flash[:alert] %></div>
+  <% end %>
+
+  <div class="card p-4 mb-5 shadow-sm">
+    <h3 class="card-title">Criar Nova Lista</h3>
+    <%= form_with(model: FavoriteList.new, url: favorite_lists_path, class: "row g-3") do |form| %>
+      <div class="col-md-9">
+        <%= form.text_field :name, class: "form-control", placeholder: "Ex: Naves de Batalha ou Melhores Personagens", required: true %>
+      </div>
+      <div class="col-md-3">
+        <%= form.submit "Criar Lista", class: "btn btn-primary w-100" %>
+      </div>
+    <% end %>
+  </div>
+
+  <h3 class="mt-4">Minhas Listas (<%= @favorite_lists.count %>)</h3>
+  
+  <% if @favorite_lists.empty? %>
+    <p class="alert alert-info">Crie sua primeira lista de favoritos acima.</p>
+  <% else %>
+    <div class="list-group">
+      <% @favorite_lists.each do |list| %>
+        <%= link_to favorite_list_path(list), class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do %>
+          <div class="fw-bold"><%= list.name %></div>
+          <span class="badge bg-primary rounded-pill"><%= list.favorites.count %> itens</span>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

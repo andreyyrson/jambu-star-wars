@@ -1,5 +1,3 @@
-# app/controllers/starships_controller.rb
-
 class StarshipsController < ApplicationController
   before_action :set_starship, only: %i[ show favorite ]
 
@@ -15,26 +13,31 @@ class StarshipsController < ApplicationController
   end
 
   # POST /starships/:id/favorite
-  # Ação atualizada para exigir o favorites_list_id
   def favorite
-    starship = @starship # O @starship já está carregado pelo before_action
-    list_id = params[:favorites_list_id]
+    # 1. Valida e acessa o ID da lista através de strong parameters
+    list_id = favorite_params[:favorites_list_id]
     
     unless list_id.present?
-      return render json: { error: "O parâmetro 'favorites_list_id' é obrigatório para favoritar. Por favor, especifique a lista." }, status: :bad_request
+      # Retorna 400 Bad Request se o ID da lista estiver faltando
+      return render json: { error: "O parâmetro 'favorites_list_id' é obrigatório para favoritar." }, status: :bad_request
     end
 
     favorites_list = FavoritesList.find(list_id)
 
-    @favorite = starship.favorites.new(favorites_list_id: favorites_list.id)
+    @favorite = @starship.favorites.new(favorites_list: favorites_list) 
 
     if @favorite.save
       render json: @favorite, status: :created
     else
-      render json: { errors: @favorite.errors.full_messages }, status: :unprocessable_entity
+      # Erro de validação
+      render json: { error: @favorite.errors.full_messages.to_sentence }, status: :unprocessable_entity
     end
+    
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Recurso (Lista de Favoritos) não encontrado" }, status: :not_found
+    render json: { error: "A Lista de Favoritos (ID: #{list_id}) não foi encontrada." }, status: :not_found
+  rescue => e
+    Rails.logger.error "Erro inesperado ao favoritar: #{e.message}"
+    render json: { error: "Erro interno ao processar a requisição." }, status: :internal_server_error
   end
 
   private
@@ -42,5 +45,9 @@ class StarshipsController < ApplicationController
       @starship = Starship.find(params[:id])
     rescue ActiveRecord::RecordNotFound
       render json: { error: "Nave Estelar não encontrada" }, status: :not_found
+    end
+    
+    def favorite_params
+      params.permit(:favorites_list_id)
     end
 end
